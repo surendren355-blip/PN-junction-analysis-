@@ -1,0 +1,66 @@
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Title
+st.title("🔬 PN Junction Diode Virtual Lab")
+
+st.write("Simulate and analyze the V-I characteristics of a PN Junction Diode.")
+
+# Sidebar Inputs
+st.sidebar.header("⚙️ Parameters")
+
+Is = st.sidebar.number_input("Saturation Current (Is) [A]", value=1e-12, format="%.2e")
+T = st.sidebar.slider("Temperature (K)", 250, 400, 300)
+eta = st.sidebar.slider("Ideality Factor (η)", 1.0, 2.0, 1.0)
+
+# Constants
+k = 1.38e-23   # Boltzmann constant
+q = 1.6e-19    # Charge of electron
+Vt = (k * T) / q
+
+st.sidebar.write(f"Thermal Voltage (Vt): {Vt:.4f} V")
+
+# Voltage Range
+mode = st.radio("Select Bias Mode:", ["Forward Bias", "Reverse Bias", "Both"])
+
+if mode == "Forward Bias":
+    V = np.linspace(0, 0.8, 100)
+elif mode == "Reverse Bias":
+    V = np.linspace(-10, 0, 100)
+else:
+    V = np.linspace(-10, 0.8, 200)
+
+# Shockley Equation
+I = Is * (np.exp(V / (eta * Vt)) - 1)
+
+# Plot
+fig, ax = plt.subplots()
+ax.plot(V, I)
+ax.set_xlabel("Voltage (V)")
+ax.set_ylabel("Current (A)")
+ax.set_title("V-I Characteristics of PN Junction Diode")
+ax.grid()
+
+st.pyplot(fig)
+
+# Observations
+st.subheader("📊 Observations")
+st.write("""
+- Forward bias shows exponential rise in current.
+- Reverse bias shows very small current.
+- Increasing temperature increases current.
+""")
+
+# Cut-in voltage estimation
+cut_in_voltage = V[np.argmax(I > 1e-3)] if np.any(I > 1e-3) else None
+
+if cut_in_voltage:
+    st.success(f"Estimated Cut-in Voltage: {cut_in_voltage:.2f} V")
+else:
+    st.warning("Cut-in voltage not reached in selected range.")
+
+# Download data
+st.subheader("⬇️ Download Data")
+data = np.column_stack((V, I))
+st.download_button("Download CSV", data.tobytes(), file_name="diode_data.csv")
